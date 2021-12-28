@@ -1,0 +1,13 @@
+; Based on https://ghufran.posthaven.com/setting-up-a-reagent-clojurescript-project-with-shadow-cljs-and-cursive
+
+{:source-paths ["src"]
+ :dev-http {8081 "public"}
+ :nrepl {:port 55555}
+
+ :dependencies [[reagent "1.1.0"]
+                [cider/cider-nrepl "0.24.0"]]
+
+ :builds {:app {:target :browser
+                :output-dir "public/scripts/"
+                :asset-path "/scripts/"
+                :modules {:core {:init-fn gforcedev.cub3intime.core/run}}}}}
