@@ -1,4 +1,5 @@
 node_modules/
 public/scripts/
+public/main.css
 .rebel_readline_history
 .shadow-cljs/
