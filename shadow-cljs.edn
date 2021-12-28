@@ -5,7 +5,8 @@
  :nrepl {:port 55555}
 
  :dependencies [[reagent "1.1.0"]
-                [cider/cider-nrepl "0.24.0"]]
+                [cider/cider-nrepl "0.24.0"]
+                [rgm/tailwind-hiccup "0.2.0"]]
 
  :builds {:app {:target :browser
                 :output-dir "public/scripts/"

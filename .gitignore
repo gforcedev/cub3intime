@@ -1,3 +1,4 @@
 node_modules/
 public/scripts/
 .rebel_readline_history
+.shadow-cljs/
