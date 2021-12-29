@@ -1,9 +1,10 @@
-(ns gforcedev.cub3intime.components.timer
-  (:require [reagent.core :as r]
+(ns gforcedev.cub3intime.components.timer (:require [reagent.core :as r]
             [tailwind-hiccup.core :refer [tw]]))
 
-(defonce current-time (r/atom 0.0)) 
-(defonce timer-phase (r/atom :stopped)) 
+(defonce app-state (r/atom {:current-time 0
+                            :timer-phase :stopped}))
+(def curr-time (r/cursor app-state [:current-time]))
+(def phase (r/cursor app-state [:timer-phase]))
 
 (defn add-missing-decimal [s]
   (if (re-find #"\." s) s (str s ".00")))
@@ -24,11 +25,11 @@
     (str formatted-hours formatted-mins secs "." millis)))
 
 (def timer-state-updaters
-  {:stopped (fn [] (swap! current-time inc))})
+  {:stopped (fn [] (swap! curr-time inc))})
 
 (defn timer-component []
   [:button
    (tw [:text-7xl :text-center :p-20]
-       {:on-click (@timer-phase timer-state-updaters)})
-   (format-time @current-time)])
+       {:on-click (timer-state-updaters @phase)})
+   (format-time @curr-time)])
 
