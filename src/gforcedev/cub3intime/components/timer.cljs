@@ -1,5 +1,6 @@
 (ns gforcedev.cub3intime.components.timer (:require [reagent.core :as r]
-            [tailwind-hiccup.core :refer [tw]]))
+            [tailwind-hiccup.core :refer [tw]]
+            [reagent-keybindings.keyboard :as kb]))
 
 (defonce app-state (r/atom {:current-time 0
                             :timer-phase :stopped}))
@@ -28,8 +29,8 @@
   {:stopped (fn [] (swap! curr-time inc))})
 
 (defn timer-component []
-  [:button
-   (tw [:text-7xl :text-center :p-20]
-       {:on-click (timer-state-updaters @phase)})
-   (format-time @curr-time)])
+  [:div
+   (tw [:text-7xl :text-center :p-20])
+   (format-time @curr-time)
+   [kb/kb-action "space" (timer-state-updaters @phase)]])
 

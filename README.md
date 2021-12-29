@@ -3,6 +3,7 @@ This is my third attempt at a cube timer. This time, I'm using:
 - [ClojureScript](https://clojurescript.org/)
 - [shadow-cljs](https://github.com/thheller/shadow-cljs)
 - [reagent](https://github.com/reagent-project/reagent)
+- [reagent-keybindings](https://github.com/Frozenlock/reagent-keybindings)
 - [tailwind-css](https://tailwindcss.com/) (via [tailwind-hiccup](https://github.com/rgm/tailwind-hiccup))
 
 ## Setup
