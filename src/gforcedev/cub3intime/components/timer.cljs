@@ -1,11 +1,8 @@
-(ns gforcedev.cub3intime.components.timer (:require [reagent.core :as r]
+(ns gforcedev.cub3intime.components.timer 
+  (:require [reagent.core :as r]
             [tailwind-hiccup.core :refer [tw]]
-            [reagent-keybindings.keyboard :as kb]))
-
-(defonce app-state (r/atom {:current-time 0
-                            :timer-phase :stopped}))
-(def curr-time (r/cursor app-state [:current-time]))
-(def phase (r/cursor app-state [:timer-phase]))
+            [goog.events :as events])
+  (:import [goog.events EventType]))
 
 (defn add-missing-decimal [s]
   (if (re-find #"\." s) s (str s ".00")))
@@ -26,11 +23,30 @@
     (str formatted-hours formatted-mins secs "." millis)))
 
 (def timer-state-updaters
-  {:stopped (fn [] (swap! curr-time inc))})
+  {:stopped (fn [curr-time]
+              (swap! curr-time inc))})
+
+(defonce app-state (r/atom {:current-time 1
+                           :timer-phase :stopped
+                           :is-down false}))
+
+(def curr-time (r/cursor app-state [:current-time]))
+(def phase (r/cursor app-state [:timer-phase]))
+(def is-down (r/cursor app-state [:is-down]))
+
+(defonce keydown-listener (events/listen js/window EventType.KEYDOWN
+                                     #(if (= (.-key %) " ")
+                                        (if (not @is-down)
+                                          (do
+                                            (reset! is-down true)
+                                            ((timer-state-updaters @phase) curr-time))))))
+
+(defonce keyup-listener (events/listen js/window EventType.KEYUP
+                                   #(if (= (.-key %) " ")
+                                      (reset! is-down false))))
 
 (defn timer-component []
   [:div
    (tw [:text-7xl :text-center :p-20])
-   (format-time @curr-time)
-   [kb/kb-action "space" (timer-state-updaters @phase)]])
+   (format-time @curr-time)])
 
