@@ -48,19 +48,18 @@
 
 (defn timer-component [timer-state scramble-callback!]
   (let [phase (r/cursor timer-state [:timer-phase])
-        is-down (r/cursor timer-state [:is-down])
-        keydown-listener
-        (events/listen js/window EventType.KEYDOWN
-                       #(when (= (.-key %) " ")
-                          (when (not @is-down)
-                            (reset! is-down true)
-                            (update-timer-state! timer-state scramble-callback!))))
-
-        keyup-listener
-        (events/listen js/window EventType.KEYUP
-                       #(when (= (.-key %) " ")
-                          (reset! is-down false)
-                          (update-timer-state! timer-state scramble-callback!)))]
+        is-down (r/cursor timer-state [:is-down])]
+    (defonce keydown-listener
+      (events/listen js/window EventType.KEYDOWN
+                     #(when (= (.-key %) " ")
+                        (when (not @is-down)
+                          (reset! is-down true)
+                          (update-timer-state! timer-state scramble-callback!)))))
+    (defonce keyup-listener
+      (events/listen js/window EventType.KEYUP
+                     #(when (= (.-key %) " ")
+                        (reset! is-down false)
+                        (update-timer-state! timer-state scramble-callback!))))
     (fn [timer-state]
       (js/setTimeout #(inc-time! timer-state) 10)
       [:div
