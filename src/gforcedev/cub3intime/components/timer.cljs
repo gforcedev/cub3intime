@@ -37,36 +37,33 @@
    :running (fn [state]
               (swap! state #(assoc % :timer-phase :stopping)))
    :stopping (fn [state]
-              (swap! state #(assoc % :timer-phase :stopped)))})
+               (swap! state #(assoc % :timer-phase :stopped)))})
 
 (defn inc-time! [state]
   (let [old-last-tick (@state :last-tick)]
     (swap! state #(assoc % :last-tick (js/Date.now)))
-    (if (= (@state :timer-phase) :running)
+    (when (= (@state :timer-phase) :running)
       (swap! state #(assoc % :current-time
                            (+ (@state :current-time) (-> (js/Date.now) (- old-last-tick) (/ 1000))))))))
 
 (defonce app-state (r/atom {:current-time 0
-                           :timer-phase :stopped
-                           :is-down false}
+                            :timer-phase :stopped
+                            :is-down false}
                            :last-tick 0))
 
-(def curr-time (r/cursor app-state [:current-time]))
 (def phase (r/cursor app-state [:timer-phase]))
 (def is-down (r/cursor app-state [:is-down]))
 
 (defonce keydown-listener (events/listen js/window EventType.KEYDOWN
-                                     #(if (= (.-key %) " ")
-                                        (if (not @is-down)
-                                          (do
-                                            (reset! is-down true)
-                                            ((timer-state-updaters! @phase) app-state))))))
+                                         #(when (= (.-key %) " ")
+                                            (when (not @is-down)
+                                              (reset! is-down true)
+                                              ((timer-state-updaters! @phase) app-state)))))
 
 (defonce keyup-listener (events/listen js/window EventType.KEYUP
-                                   #(if (= (.-key %) " ")
-                                      (do
-                                        (reset! is-down false)
-                                        ((timer-state-updaters! @phase) app-state)))))
+                                       #(when (= (.-key %) " ")
+                                            (reset! is-down false)
+                                            ((timer-state-updaters! @phase) app-state))))
 
 (defn timer-component []
   (js/setTimeout #(inc-time! app-state) 10)
