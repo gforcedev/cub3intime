@@ -3,3 +3,5 @@ public/scripts/
 public/main.css
 .rebel_readline_history
 .shadow-cljs/
+.clj-kondo/
+.lsp/
