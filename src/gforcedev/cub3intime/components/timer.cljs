@@ -22,13 +22,34 @@
         formatted-mins (if (or (> mins 0) (> hours 0)) (str (-> mins (str) ((if (> hours 0) pad-to-2 identity))) ":") "")]
     (str formatted-hours formatted-mins secs "." millis)))
 
-(def timer-state-updaters
-  {:stopped (fn [curr-time]
-              (swap! curr-time inc))})
+(def time-color-classes
+  {:stopped :text-grey-400
+   :ready :text-green-400
+   :running :text-grey-400
+   :stopping :text-red-400})
 
-(defonce app-state (r/atom {:current-time 1
+(def timer-state-updaters!
+  {:stopped (fn [state]
+              (swap! state #(assoc % :current-time 0))
+              (swap! state #(assoc % :timer-phase :ready)))
+   :ready (fn [state]
+            (swap! state #(assoc % :timer-phase :running)))
+   :running (fn [state]
+              (swap! state #(assoc % :timer-phase :stopping)))
+   :stopping (fn [state]
+              (swap! state #(assoc % :timer-phase :stopped)))})
+
+(defn inc-time! [state]
+  (let [old-last-tick (@state :last-tick)]
+    (swap! state #(assoc % :last-tick (js/Date.now)))
+    (if (= (@state :timer-phase) :running)
+      (swap! state #(assoc % :current-time
+                           (+ (@state :current-time) (-> (js/Date.now) (- old-last-tick) (/ 1000))))))))
+
+(defonce app-state (r/atom {:current-time 0
                            :timer-phase :stopped
-                           :is-down false}))
+                           :is-down false}
+                           :last-tick 0))
 
 (def curr-time (r/cursor app-state [:current-time]))
 (def phase (r/cursor app-state [:timer-phase]))
@@ -39,14 +60,17 @@
                                         (if (not @is-down)
                                           (do
                                             (reset! is-down true)
-                                            ((timer-state-updaters @phase) curr-time))))))
+                                            ((timer-state-updaters! @phase) app-state))))))
 
 (defonce keyup-listener (events/listen js/window EventType.KEYUP
                                    #(if (= (.-key %) " ")
-                                      (reset! is-down false))))
+                                      (do
+                                        (reset! is-down false)
+                                        ((timer-state-updaters! @phase) app-state)))))
 
 (defn timer-component []
+  (js/setTimeout #(inc-time! app-state) 10)
   [:div
-   (tw [:text-7xl :text-center :p-20])
-   (format-time @curr-time)])
+   (tw [:text-7xl :text-center :p-20 (time-color-classes (@app-state :timer-phase))])
+   (format-time (@app-state :current-time))])
 
