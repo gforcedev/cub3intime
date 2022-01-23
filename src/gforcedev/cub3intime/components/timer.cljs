@@ -44,7 +44,10 @@
     (swap! state #(assoc % :last-tick (js/Date.now)))
     (when (= (@state :timer-phase) :running)
       (swap! state #(assoc % :current-time
-                           (+ (@state :current-time) (-> (js/Date.now) (- old-last-tick) (/ 1000))))))))
+                           (+ (@state :current-time)
+                              (-> (js/Date.now)
+                                  (- old-last-tick)
+                                  (/ 1000))))))))
 
 (defn timer-component [timer-state scramble-callback!]
   (let [phase (r/cursor timer-state [:timer-phase])
