@@ -28,16 +28,16 @@
    :running :text-grey-400
    :stopping :text-red-400})
 
-(def timer-state-updaters!
-  {:stopped (fn [state]
-              (swap! state #(assoc % :current-time 0))
-              (swap! state #(assoc % :timer-phase :ready)))
-   :ready (fn [state]
-            (swap! state #(assoc % :timer-phase :running)))
-   :running (fn [state]
-              (swap! state #(assoc % :timer-phase :stopping)))
-   :stopping (fn [state]
-               (swap! state #(assoc % :timer-phase :stopped)))})
+(defn update-timer-state! [state scramble-callback]
+  (case (:timer-phase @state)
+    :stopped (do
+               (swap! state #(assoc % :current-time 0))
+               (swap! state #(assoc % :timer-phase :ready)))
+    :ready (swap! state #(assoc % :timer-phase :running))
+    :running (swap! state #(assoc % :timer-phase :stopping))
+    :stopping (do
+                (swap! state #(assoc % :timer-phase :stopped))
+                (scramble-callback))))
 
 (defn inc-time! [state]
   (let [old-last-tick (@state :last-tick)]
@@ -46,28 +46,24 @@
       (swap! state #(assoc % :current-time
                            (+ (@state :current-time) (-> (js/Date.now) (- old-last-tick) (/ 1000))))))))
 
-(defonce app-state (r/atom {:current-time 0
-                            :timer-phase :stopped
-                            :is-down false}
-                           :last-tick 0))
+(defn timer-component [timer-state scramble-callback!]
+  (let [phase (r/cursor timer-state [:timer-phase])
+        is-down (r/cursor timer-state [:is-down])
+        keydown-listener
+        (events/listen js/window EventType.KEYDOWN
+                       #(when (= (.-key %) " ")
+                          (when (not @is-down)
+                            (reset! is-down true)
+                            (update-timer-state! timer-state scramble-callback!))))
 
-(def phase (r/cursor app-state [:timer-phase]))
-(def is-down (r/cursor app-state [:is-down]))
-
-(defonce keydown-listener (events/listen js/window EventType.KEYDOWN
-                                         #(when (= (.-key %) " ")
-                                            (when (not @is-down)
-                                              (reset! is-down true)
-                                              ((timer-state-updaters! @phase) app-state)))))
-
-(defonce keyup-listener (events/listen js/window EventType.KEYUP
-                                       #(when (= (.-key %) " ")
-                                            (reset! is-down false)
-                                            ((timer-state-updaters! @phase) app-state))))
-
-(defn timer-component []
-  (js/setTimeout #(inc-time! app-state) 10)
-  [:div
-   (tw [:text-7xl :text-center :p-20 (time-color-classes (@app-state :timer-phase))])
-   (format-time (@app-state :current-time))])
+        keyup-listener
+        (events/listen js/window EventType.KEYUP
+                       #(when (= (.-key %) " ")
+                          (reset! is-down false)
+                          (update-timer-state! timer-state scramble-callback!)))]
+    (fn [timer-state]
+      (js/setTimeout #(inc-time! timer-state) 10)
+      [:div
+       (tw [:text-7xl :text-center :p-20 (time-color-classes (@timer-state :timer-phase))])
+       (format-time (@timer-state :current-time))])))
 
