@@ -4,6 +4,7 @@
             [tailwind-hiccup.core :refer [tw]]
             ["scrambow" :as scrambow]
             [gforcedev.cub3intime.components.timer :as timer-component]
+            [gforcedev.cub3intime.components.penalty-button :as penalty-button-component]
             [gforcedev.cub3intime.components.scramble :as scramble-component]))
 
 (defonce scrambow-scrambler (new scrambow/Scrambow))
@@ -27,7 +28,14 @@
    [timer-component/timer-component
     (app-cursors :current-time)
     (app-cursors :current-penalty)
-    scramble-callback!]])
+    scramble-callback!]
+   [:div (tw [:text-center])
+    [penalty-button-component/penalty-button-component
+     (app-cursors :current-penalty) "" "No penalty"]
+    [penalty-button-component/penalty-button-component
+     (app-cursors :current-penalty) "+2" "+2"]
+    [penalty-button-component/penalty-button-component
+     (app-cursors :current-penalty) "DNF" "DNF"]]])
 
 (defn ^:export ^:dev/after-load run []
   (rdom/render [root-component] dom-root))

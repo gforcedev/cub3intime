@@ -1,4 +1,4 @@
-(ns gforcedev.cub3intime.components.timer 
+(ns gforcedev.cub3intime.components.timer
   (:require [reagent.core :as r]
             [tailwind-hiccup.core :refer [tw]]
             [goog.events :as events])
