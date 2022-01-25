@@ -21,50 +21,55 @@
            (pad-to-2 s) s)
          "." (-> ms (* 100) (js/Math.floor) (pad-to-2)))))
 
+(defn display-time [n penalty]
+  (case penalty
+    "" (format-time n)
+    "+2" (->> n (format-time) (str "+"))
+    "DNF" "DNF"))
+
 (def time-color-classes
   {:stopped :text-grey-400
    :ready :text-green-400
    :running :text-grey-400
    :stopping :text-red-400})
 
-(defn update-timer-state! [state scramble-callback]
-  (case (:timer-phase @state)
+(defn update-timer-state! [current-phase current-time scramble-callback]
+  (case @current-phase
     :stopped (do
-               (swap! state #(assoc % :current-time 0))
-               (swap! state #(assoc % :timer-phase :ready)))
-    :ready (swap! state #(assoc % :timer-phase :running))
-    :running (swap! state #(assoc % :timer-phase :stopping))
+               (reset! current-time 0)
+               (reset! current-phase :ready))
+    :ready (reset! current-phase :running)
+    :running (reset! current-phase :stopping)
     :stopping (do
-                (swap! state #(assoc % :timer-phase :stopped))
+                (reset! current-phase :stopped)
                 (scramble-callback))))
 
-(defn inc-time! [state]
-  (let [old-last-tick (@state :last-tick)]
-    (swap! state #(assoc % :last-tick (js/Date.now)))
-    (when (= (@state :timer-phase) :running)
-      (swap! state #(assoc % :current-time
-                           (+ (@state :current-time)
-                              (-> (js/Date.now)
-                                  (- old-last-tick)
-                                  (/ 1000))))))))
+(defn inc-time! [last-tick current-phase current-time]
+  (let [old-last-tick @last-tick]
+    (reset! last-tick (js/Date.now))
+    (when (= @current-phase :running)
+      (swap! current-time #(+ % (-> (js/Date.now)
+                                    (- old-last-tick)
+                                    (/ 1000)))))))
 
-(defn timer-component [timer-state scramble-callback!]
-  (let [phase (r/cursor timer-state [:timer-phase])
-        is-down (r/cursor timer-state [:is-down])]
+(defn timer-component [current-time current-penalty scramble-callback!]
+  (let [current-phase (r/atom :stopped)
+        is-down (r/atom false)
+        last-tick (r/atom (js/Date.now))]
     (defonce keydown-listener
       (events/listen js/window EventType.KEYDOWN
                      #(when (= (.-key %) " ")
                         (when (not @is-down)
                           (reset! is-down true)
-                          (update-timer-state! timer-state scramble-callback!)))))
+                          (update-timer-state! current-phase current-time scramble-callback!)))))
     (defonce keyup-listener
       (events/listen js/window EventType.KEYUP
                      #(when (= (.-key %) " ")
                         (reset! is-down false)
-                        (update-timer-state! timer-state scramble-callback!))))
-    (fn [timer-state]
-      (js/setTimeout #(inc-time! timer-state) 10)
+                        (update-timer-state! current-phase current-time scramble-callback!))))
+    (fn [current-time]
+      (js/setTimeout #(inc-time! last-tick current-phase current-time) 10)
       [:div
-       (tw [:text-7xl :text-center :p-20 (time-color-classes (@timer-state :timer-phase))])
-       (format-time (@timer-state :current-time))])))
+       (tw [:text-7xl :text-center :p-20 (time-color-classes @current-phase)])
+       (format-time @current-time)])))
 

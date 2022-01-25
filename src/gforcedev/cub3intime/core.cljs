@@ -13,9 +13,9 @@
 (def dom-root (js/document.getElementById "app"))
 
 (defonce app-state (r/atom {:current-time 0
-                            :timer-phase :stopped
-                            :is-down false
                             :scramble-string (get-3x3-scramble)}))
+
+(def app-cursors (into {} (for [[k v] @app-state] [k (r/cursor app-state [v])])))
 
 (defn scramble-callback! []
   (swap! app-state #(assoc % :scramble-string (get-3x3-scramble))))
@@ -23,7 +23,11 @@
 (defn root-component []
   [:div (tw [:h-screen :w-screen :flex :flex-col])
    [scramble-component/scramble-component (:scramble-string @app-state)]
-   [timer-component/timer-component app-state scramble-callback!]])
+   [timer-component/timer-component
+    (app-cursors :current-time)
+    (app-cursors :current-penalty)
+    scramble-callback!]])
 
 (defn ^:export ^:dev/after-load run []
   (rdom/render [root-component] dom-root))
+
