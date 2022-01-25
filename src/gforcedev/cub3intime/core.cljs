@@ -13,9 +13,10 @@
 (def dom-root (js/document.getElementById "app"))
 
 (defonce app-state (r/atom {:current-time 0
+                            :current-penalty ""
                             :scramble-string (get-3x3-scramble)}))
 
-(def app-cursors (into {} (for [[k v] @app-state] [k (r/cursor app-state [v])])))
+(defonce app-cursors (into {} (for [[k _] @app-state] [k (r/cursor app-state [k])])))
 
 (defn scramble-callback! []
   (swap! app-state #(assoc % :scramble-string (get-3x3-scramble))))

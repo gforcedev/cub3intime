@@ -24,7 +24,7 @@
 (defn display-time [n penalty]
   (case penalty
     "" (format-time n)
-    "+2" (->> n (format-time) (str "+"))
+    "+2" (-> (+ n 2) (format-time) (str "+"))
     "DNF" "DNF"))
 
 (def time-color-classes
@@ -33,10 +33,11 @@
    :running :text-grey-400
    :stopping :text-red-400})
 
-(defn update-timer-state! [current-phase current-time scramble-callback]
+(defn update-timer-state! [current-phase current-time current-penalty scramble-callback]
   (case @current-phase
     :stopped (do
                (reset! current-time 0)
+               (reset! current-penalty "")
                (reset! current-phase :ready))
     :ready (reset! current-phase :running)
     :running (reset! current-phase :stopping)
@@ -52,24 +53,25 @@
                                     (- old-last-tick)
                                     (/ 1000)))))))
 
+(defonce current-phase (r/atom :stopped))
+(defonce is-down (r/atom false))
+(defonce last-tick (r/atom (js/Date.now)))
+
 (defn timer-component [current-time current-penalty scramble-callback!]
-  (let [current-phase (r/atom :stopped)
-        is-down (r/atom false)
-        last-tick (r/atom (js/Date.now))]
-    (defonce keydown-listener
-      (events/listen js/window EventType.KEYDOWN
-                     #(when (= (.-key %) " ")
-                        (when (not @is-down)
-                          (reset! is-down true)
-                          (update-timer-state! current-phase current-time scramble-callback!)))))
-    (defonce keyup-listener
-      (events/listen js/window EventType.KEYUP
-                     #(when (= (.-key %) " ")
-                        (reset! is-down false)
-                        (update-timer-state! current-phase current-time scramble-callback!))))
-    (fn [current-time]
-      (js/setTimeout #(inc-time! last-tick current-phase current-time) 10)
-      [:div
-       (tw [:text-7xl :text-center :p-20 (time-color-classes @current-phase)])
-       (format-time @current-time)])))
+  (defonce keydown-listener
+    (events/listen js/window EventType.KEYDOWN
+                   #(when (= (.-key %) " ")
+                      (when (not @is-down)
+                        (reset! is-down true)
+                        (update-timer-state! current-phase current-time current-penalty scramble-callback!)))))
+  (defonce keyup-listener
+    (events/listen js/window EventType.KEYUP
+                   #(when (= (.-key %) " ")
+                      (reset! is-down false)
+                      (update-timer-state! current-phase current-time current-penalty scramble-callback!))))
+  (fn [current-time]
+    (js/setTimeout #(inc-time! last-tick current-phase current-time) 10)
+    [:div
+     (tw [:text-7xl :text-center :p-20 (time-color-classes @current-phase)])
+     (display-time @current-time @current-penalty)]))
 
