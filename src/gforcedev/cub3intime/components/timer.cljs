@@ -4,23 +4,24 @@
             [goog.events :as events])
   (:import [goog.events EventType]))
 
-(defn add-missing-decimal [s]
-  (if (re-find #"\." s) s (str s ".00")))
-
 (defn pad-to-2 [s]
-  (if (= (count s) 2)
-    s
-    (recur (str "0" s))))
+  (if (= (count s) 2) s (recur (str "0" s))))
 
 (defn format-time [n]
-  (let [[_ raw-secs raw-millis] (->> n (str) (add-missing-decimal) (re-find #"(\d+)\.(\d\d)") (mapv js/parseInt))
-        hours (if (>= raw-secs 3600) (-> 3661 (/ 3600) Math/floor) 0)
-        mins (if (>= raw-secs 60) (-> (- raw-secs (* 3600 hours)) (/ 60) Math/floor) 0)
-        secs (-> raw-secs (- (* hours 3600)) (- (* mins 60)) (str) (pad-to-2))
-        millis (-> raw-millis (str) (pad-to-2))
-        formatted-hours (if (> hours 0) (str hours ":") "")
-        formatted-mins (if (or (> mins 0) (> hours 0)) (str (-> mins (str) ((if (> hours 0) pad-to-2 identity))) ":") "")]
-    (str formatted-hours formatted-mins secs "." millis)))
+  (let [ms (mod n 1)
+        floored (js/Math.floor n)
+        s (mod floored 60)
+        m (/ (mod (- floored s) 3600) 60)
+        h (/ (- floored s (* m 60)) 3600)]
+    (str
+      (if (> h 0) (str h ":") "")
+      (if (> h 0)
+        (str (pad-to-2 (str m)) ":")
+        (if (> m 0) (str m ":") ""))
+      (if (some #(> % 0) [h m])
+        (pad-to-2 (str s))
+        s)
+      "." (-> ms (* 100) (js/Math.floor) (str) (pad-to-2)))))
 
 (def time-color-classes
   {:stopped :text-grey-400
