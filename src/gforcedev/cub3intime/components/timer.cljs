@@ -4,24 +4,22 @@
             [goog.events :as events])
   (:import [goog.events EventType]))
 
-(defn pad-to-2 [s]
-  (if (= (count s) 2) s (recur (str "0" s))))
+(defn pad-to-2 [n]
+  (let [s (str n)] (if (= (count s) 2) s (recur (str "0" s)))))
 
 (defn format-time [n]
-  (let [ms (mod n 1)
-        floored (js/Math.floor n)
+  (let [floored (js/Math.floor n)
+        ms (mod n 1)
         s (mod floored 60)
-        m (/ (mod (- floored s) 3600) 60)
-        h (/ (- floored s (* m 60)) 3600)]
-    (str
-      (if (> h 0) (str h ":") "")
-      (if (> h 0)
-        (str (pad-to-2 (str m)) ":")
-        (if (> m 0) (str m ":") ""))
-      (if (some #(> % 0) [h m])
-        (pad-to-2 (str s))
-        s)
-      "." (-> ms (* 100) (js/Math.floor) (str) (pad-to-2)))))
+        m (-> floored (- s) (mod 3600) (/ 60))
+        h (-> floored (- s (* m 60)) (/ 3600))]
+    (str (if (> h 0) (str h ":") "")
+         (if (> h 0)
+           (str (pad-to-2 m) ":")
+           (if (> m 0) (str m ":") ""))
+         (if (some #(> % 0) [h m])
+           (pad-to-2 s) s)
+         "." (-> ms (* 100) (js/Math.floor) (pad-to-2)))))
 
 (def time-color-classes
   {:stopped :text-grey-400
